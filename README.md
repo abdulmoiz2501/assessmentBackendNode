@@ -30,7 +30,7 @@ Update the `.env` file with your values:
 ```env
 PORT=3000
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-OPENAI_API_KEY=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
+OPENAI_API_KEY=sk-proj--uumlOyeqMz2EdMaI0PPCtyJAA
 ```
 
 ### 3. Run the Server

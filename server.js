@@ -147,8 +147,21 @@ app.post('/api/auth/login', async (req, res) => {
       }
     }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    // For serverless: if comparing against newly hashed password, verify directly
+    // Otherwise compare using bcrypt
+    let isValidPassword;
+    const plainPassword = defaultPasswords[user.username];
+    if (plainPassword && password === plainPassword) {
+      // Direct comparison for demo users in serverless
+      isValidPassword = true;
+      // Update stored hash if needed
+      if (!user.password || user.password.length < 20) {
+        user.password = await bcrypt.hash(plainPassword, 10);
+      }
+    } else {
+      // Normal bcrypt comparison
+      isValidPassword = await bcrypt.compare(password, user.password);
+    }
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

@@ -140,11 +140,14 @@ app.post('/api/auth/login', async (req, res) => {
     // Find user
     const user = users.find((u) => u.username === username);
     if (!user) {
+      console.log('User not found:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Verify password using bcrypt
+    console.log('Comparing password for user:', username, 'Password hash exists:', !!user.password);
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('Password match result:', isValidPassword);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

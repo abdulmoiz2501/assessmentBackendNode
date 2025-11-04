@@ -137,6 +137,16 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Hash password if not already hashed (for serverless environments)
+    if (!user.password || user.password.length < 20) {
+      const plainPassword = defaultPasswords[user.username];
+      if (plainPassword) {
+        user.password = await bcrypt.hash(plainPassword, 10);
+      } else {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+    }
+
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
@@ -289,14 +299,26 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server
-app.listen(PORT, async () => {
-  // Hash default passwords on startup
+// Hash passwords on startup
+async function initializeUsers() {
   for (let user of users) {
     if (defaultPasswords[user.username]) {
       user.password = await bcrypt.hash(defaultPasswords[user.username], 10);
     }
   }
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/health`);
-});
+}
+
+// Initialize users
+initializeUsers();
+
+// Start server (only for local development)
+if (require.main === module) {
+  app.listen(PORT, async () => {
+    await initializeUsers();
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
+  });
+}
+
+// Export app for Vercel
+module.exports = app;

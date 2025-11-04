@@ -20,20 +20,26 @@ const defaultPasswords = {
   user: 'user123',
 };
 
+// Pre-hashed passwords for serverless compatibility
+// These are pre-computed bcrypt hashes for the default passwords
+const preHashedPasswords = {
+  admin: '$2a$10$81crtIAKIqXWoeN9vFN6O.3AvSH4Ua3vFrP8DEzxtTDT7XmNVgeF6', // admin123
+  user: '$2a$10$vzjEB5tnkWh63xppjPu8Au2mPO/lLXWnrYsXpLj88M.9r1QJHU7ea', // user123
+};
+
 // In-memory user database (for demo purposes)
 // In production, use a proper database
-// Passwords will be hashed on server start
 const users = [
   {
     id: '1',
     username: 'admin',
-    password: '', // Will be hashed on startup
+    password: preHashedPasswords.admin, // Pre-hashed for serverless
     email: 'admin@example.com',
   },
   {
     id: '2',
     username: 'user',
-    password: '', // Will be hashed on startup
+    password: preHashedPasswords.user, // Pre-hashed for serverless
     email: 'user@example.com',
   },
 ];
@@ -137,31 +143,8 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Hash password if not already hashed (for serverless environments)
-    if (!user.password || user.password.length < 20) {
-      const plainPassword = defaultPasswords[user.username];
-      if (plainPassword) {
-        user.password = await bcrypt.hash(plainPassword, 10);
-      } else {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-    }
-
-    // For serverless: if comparing against newly hashed password, verify directly
-    // Otherwise compare using bcrypt
-    let isValidPassword;
-    const plainPassword = defaultPasswords[user.username];
-    if (plainPassword && password === plainPassword) {
-      // Direct comparison for demo users in serverless
-      isValidPassword = true;
-      // Update stored hash if needed
-      if (!user.password || user.password.length < 20) {
-        user.password = await bcrypt.hash(plainPassword, 10);
-      }
-    } else {
-      // Normal bcrypt comparison
-      isValidPassword = await bcrypt.compare(password, user.password);
-    }
+    // Verify password using bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

@@ -4,3 +4,6 @@ node_modules/
 *.log
 dist/
 build/
+
+# .env.example should be tracked (it's a template)
+# Only .env (with actual secrets) should be ignored
